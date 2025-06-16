@@ -1,3 +1,4 @@
+from argparse import ArgumentDefaultsHelpFormatter
 import sys
 import unittest
 import datetime as dt
@@ -311,6 +312,22 @@ class ArgumentParserTests(unittest.TestCase):
         params = ArgumentParser(Args).parse_args(["--num_of_foo=10", "--no-is_fun"])
         self.assertEqual(10, params.num_of_foo)
         self.assertFalse(params.is_fun)
+
+    def test_default_help(self):
+        @dataclass
+        class Opt:
+            answer: int = field(
+                default=42,
+                metadata=dict(help="answer"),
+            )
+
+        """Test ArgumentsDefaultsHelpFormatter works as expected."""
+        parser = ArgumentParser(
+            Opt,
+            formatter_class=ArgumentDefaultsHelpFormatter,
+        )
+        help_message = parser.format_help()
+        assert "answer (default: 42)" in help_message
 
 
 if __name__ == "__main__":
