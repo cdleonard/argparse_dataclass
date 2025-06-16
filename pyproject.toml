@@ -23,7 +23,7 @@ classifiers = [
 Homepage = "https://github.com/mivade/argparse_dataclass"
 
 [project.optional-dependencies]
-dev = ["black", "flake8", "tox", "pytest", "build"]
+dev = ["black", "flake8", "flake8-pyproject", "tox", "pytest", "build"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
