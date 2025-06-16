@@ -240,6 +240,7 @@ SOFTWARE.
 
 import argparse
 from argparse import BooleanOptionalAction
+from argparse import Namespace
 from typing import (
     TypeVar,
     Optional,
@@ -275,7 +276,8 @@ def parse_args(options_class: Type[OptionsType], args: ArgsType = None) -> Optio
     """Parse arguments and return as the dataclass type."""
     parser = argparse.ArgumentParser()
     _add_dataclass_options(options_class, parser)
-    kwargs = _get_kwargs(parser.parse_args(args))
+    initial_namespace = _init_namespace(options_class)
+    kwargs = _get_kwargs(parser.parse_args(args, initial_namespace))
     return options_class(**kwargs)
 
 
@@ -287,7 +289,9 @@ def parse_known_args(
     """
     parser = argparse.ArgumentParser()
     _add_dataclass_options(options_class, parser)
-    namespace, others = parser.parse_known_args(args=args)
+    initial_namespace = _init_namespace(options_class)
+    namespace, others = parser.parse_known_args(args, initial_namespace)
+    assert namespace == initial_namespace
     kwargs = _get_kwargs(namespace)
     return options_class(**kwargs), others
 
@@ -389,6 +393,22 @@ def _add_dataclass_options(
             parser.add_argument(*args, **kwargs)
 
 
+def _init_namespace(options_class: Type[OptionsType]) -> Namespace:
+    """Init a namespace for passing into `argparse.ArgumentParser.parse_args`
+
+    Assign a flag value (MISSING) for all fields which have a default at the
+    dataclass level, this prevents argparse from assigning to those fields.
+    """
+    ns = Namespace()
+    assert is_dataclass(options_class)
+    for field in fields(options_class):
+        if field.default is not MISSING:
+            setattr(ns, field.name, field.default)
+        elif field.default_factory is not MISSING:
+            setattr(ns, field.name, field.default_factory())
+    return ns
+
+
 def _get_kwargs(namespace: argparse.Namespace) -> dict[str, Any]:
     """Converts a Namespace to a dictionary containing the items that
     to be used as keyword arguments to the Options class.
@@ -481,7 +501,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[OptionsType]):
         """
         if namespace is not None:
             raise ValueError("supplying a namespace is not allowed")
-        namespace, others = super().parse_known_args(args=args)
+        initial_namespace = _init_namespace(self._options_type)
+        namespace, others = super().parse_known_args(args, initial_namespace)
+        assert namespace == initial_namespace
         kwargs = _get_kwargs(namespace)
         return self._options_type(**kwargs), others
 
