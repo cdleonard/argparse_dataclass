@@ -469,10 +469,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[OptionsType]):
 
     def parse_args(self, args: ArgsType = None, namespace=None) -> OptionsType:
         """Parse arguments and return as the dataclass type."""
-        if namespace is not None:
-            raise ValueError("supplying a namespace is not allowed")
-        kwargs = _get_kwargs(super().parse_args(args))
-        return self._options_type(**kwargs)
+        opts = super().parse_args(args, namespace)
+        assert isinstance(opts, self._options_type)
+        return opts
 
     def parse_known_args(
         self, args: ArgsType = None, namespace=None
